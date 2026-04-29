@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ app_name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="rail">
+      <div class="brand">
+        <span class="brand-mark">AI</span>
+        <div>
+          <strong>Smart Downloads</strong>
+          <span>Auto-Organizer</span>
+        </div>
+      </div>
+      <nav class="nav-stack" aria-label="Dashboard sections">
+        <button class="nav-item active" data-view="dashboard">Dashboard</button>
+        <button class="nav-item" data-view="history">History</button>
+        <button class="nav-item" data-view="logs">Logs</button>
+      </nav>
+      <div class="system-readout">
+        <span>Classifier</span>
+        <strong id="llmProvider">Local semantic</strong>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <section class="topbar">
+        <div>
+          <p class="eyebrow">NLP-driven file intelligence</p>
+          <h1>Smart Downloads Auto-Organizer</h1>
+        </div>
+        <div id="statusPill" class="status-pill idle">Idle</div>
+      </section>
+
+      <section class="control-band">
+        <div class="path-grid">
+          <label>
+            Watch folder
+            <div class="path-row">
+              <input id="watchPath" type="text" placeholder="Select a folder to monitor">
+              <button class="ghost" data-picker-target="watchPath" title="Browse folders">Browse</button>
+            </div>
+          </label>
+          <label>
+            Destination root
+            <div class="path-row">
+              <input id="destinationRoot" type="text" placeholder="Defaults to Organized inside watch folder">
+              <button class="ghost" data-picker-target="destinationRoot" title="Browse folders">Browse</button>
+            </div>
+          </label>
+        </div>
+
+        <div class="actions-row">
+          <label class="toggle-row">
+            <input id="processExisting" type="checkbox">
+            <span>Process existing files on start</span>
+          </label>
+          <button id="startBtn" class="primary">Start Monitoring</button>
+          <button id="stopBtn" class="danger">Stop</button>
+        </div>
+      </section>
+
+      <section class="metric-grid">
+        <div class="metric">
+          <span>Status</span>
+          <strong id="metricStatus">Idle</strong>
+        </div>
+        <div class="metric">
+          <span>Queue</span>
+          <strong id="metricQueue">0</strong>
+        </div>
+        <div class="metric">
+          <span>Last Category</span>
+          <strong id="metricCategory">None</strong>
+        </div>
+        <div class="metric">
+          <span>Processed</span>
+          <strong id="metricProcessed">0</strong>
+        </div>
+      </section>
+
+      <section id="dashboardView" class="view active-view">
+        <div class="split-layout">
+          <div class="surface">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Live activity</p>
+                <h2>Recent classifications</h2>
+              </div>
+              <button id="refreshBtn" class="ghost">Refresh</button>
+            </div>
+            <div id="recentList" class="activity-list"></div>
+          </div>
+
+          <div class="surface">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Taxonomy</p>
+                <h2>Category map</h2>
+              </div>
+            </div>
+            <div id="categoryList" class="category-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="historyView" class="view">
+        <div class="surface">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Audit trail</p>
+              <h2>Processed files</h2>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Category</th>
+                  <th>Confidence</th>
+                  <th>Status</th>
+                  <th>Time</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="historyRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="logsView" class="view">
+        <div class="surface">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Runtime</p>
+              <h2>Organizer logs</h2>
+            </div>
+            <button id="refreshLogsBtn" class="ghost">Refresh</button>
+          </div>
+          <pre id="logOutput" class="log-output"></pre>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="folderDialog">
+    <div class="dialog-panel">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Local browser</p>
+          <h2>Select folder</h2>
+        </div>
+        <button id="closePickerBtn" class="ghost">Close</button>
+      </div>
+      <div class="picker-path">
+        <button id="upBtn" class="ghost">Up</button>
+        <input id="pickerPath" type="text">
+        <button id="goBtn" class="ghost">Go</button>
+        <button id="chooseBtn" class="primary">Choose</button>
+      </div>
+      <div id="rootChips" class="chip-row"></div>
+      <div id="folderList" class="folder-list"></div>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
+

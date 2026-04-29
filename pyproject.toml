@@ -1,0 +1,11 @@
+[project]
+name = "smart-downloads-auto-organizer"
+version = "1.0.0"
+description = "NLP-driven real-time Downloads folder auto-organizer with Flask dashboard."
+requires-python = ">=3.8"
+authors = [{ name = "Smart Downloads Auto-Organizer" }]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
