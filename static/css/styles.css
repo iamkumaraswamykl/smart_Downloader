@@ -36,6 +36,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
 .app-shell {
   min-height: 100vh;
   display: grid;
@@ -273,7 +278,7 @@ select:focus {
 
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
   gap: 14px;
 }
 
@@ -386,6 +391,13 @@ select:focus {
 
 .table-wrap {
   overflow: auto;
+}
+
+.history-toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(180px, 240px);
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 table {
@@ -522,7 +534,8 @@ dialog::backdrop {
 
   .path-grid,
   .split-layout,
-  .metric-grid {
+  .metric-grid,
+  .history-toolbar {
     grid-template-columns: 1fr;
   }
 }

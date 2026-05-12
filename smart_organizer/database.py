@@ -83,6 +83,48 @@ class OrganizerDatabase:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def summary(self) -> Dict[str, Any]:
+        with self._connect() as conn:
+            status_rows = conn.execute(
+                """
+                SELECT status, COUNT(*) AS count
+                FROM actions
+                GROUP BY status
+                """
+            ).fetchall()
+            category_rows = conn.execute(
+                """
+                SELECT category, COUNT(*) AS count
+                FROM actions
+                WHERE status NOT IN ('error', 'undone')
+                GROUP BY category
+                ORDER BY count DESC, category ASC
+                """
+            ).fetchall()
+            latest = conn.execute(
+                """
+                SELECT *
+                FROM actions
+                ORDER BY created_at DESC, id DESC
+                LIMIT 1
+                """
+            ).fetchone()
+
+        status_counts = {row["status"]: row["count"] for row in status_rows}
+        processed = sum(
+            count
+            for status, count in status_counts.items()
+            if status not in {"error", "undone"}
+        )
+        return {
+            "total_actions": sum(status_counts.values()),
+            "processed": processed,
+            "errors": status_counts.get("error", 0),
+            "status_counts": status_counts,
+            "category_counts": [dict(row) for row in category_rows],
+            "latest": dict(latest) if latest else None,
+        }
+
     def get_action(self, action_id: int) -> Optional[Dict[str, Any]]:
         with self._connect() as conn:
             row = conn.execute("SELECT * FROM actions WHERE id = ?", (action_id,)).fetchone()
@@ -143,4 +185,3 @@ class OrganizerDatabase:
                 "moved_at": None,
             }
         )
-

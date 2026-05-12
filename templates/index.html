@@ -81,6 +81,14 @@
           <span>Processed</span>
           <strong id="metricProcessed">0</strong>
         </div>
+        <div class="metric">
+          <span>Errors</span>
+          <strong id="metricErrors">0</strong>
+        </div>
+        <div class="metric">
+          <span>Last Activity</span>
+          <strong id="metricLastAction">None</strong>
+        </div>
       </section>
 
       <section id="dashboardView" class="view active-view">
@@ -115,6 +123,22 @@
               <p class="eyebrow">Audit trail</p>
               <h2>Processed files</h2>
             </div>
+          </div>
+          <div class="history-toolbar">
+            <label>
+              Search
+              <input id="historySearch" type="search" placeholder="File, path, category, or status">
+            </label>
+            <label>
+              Status
+              <select id="historyStatus">
+                <option value="">All statuses</option>
+                <option value="moved">Moved</option>
+                <option value="reclassified">Reclassified</option>
+                <option value="undone">Undone</option>
+                <option value="error">Errors</option>
+              </select>
+            </label>
           </div>
           <div class="table-wrap">
             <table>
@@ -173,4 +197,3 @@
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
-

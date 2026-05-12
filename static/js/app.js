@@ -3,6 +3,8 @@ const state = {
   actions: [],
   pickerTarget: null,
   pickerParent: "",
+  historySearch: "",
+  historyStatus: "",
 };
 
 const els = {
@@ -18,10 +20,14 @@ const els = {
   metricQueue: document.querySelector("#metricQueue"),
   metricCategory: document.querySelector("#metricCategory"),
   metricProcessed: document.querySelector("#metricProcessed"),
+  metricErrors: document.querySelector("#metricErrors"),
+  metricLastAction: document.querySelector("#metricLastAction"),
   llmProvider: document.querySelector("#llmProvider"),
   recentList: document.querySelector("#recentList"),
   categoryList: document.querySelector("#categoryList"),
   historyRows: document.querySelector("#historyRows"),
+  historySearch: document.querySelector("#historySearch"),
+  historyStatus: document.querySelector("#historyStatus"),
   logOutput: document.querySelector("#logOutput"),
   toast: document.querySelector("#toast"),
   folderDialog: document.querySelector("#folderDialog"),
@@ -39,7 +45,7 @@ async function api(path, options = {}) {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(data.error || "Request failed");
   }
@@ -94,21 +100,49 @@ async function loadActions() {
   renderActions();
 }
 
+async function loadSummary() {
+  const summary = await api("/api/summary");
+  renderSummary(summary);
+}
+
+function renderSummary(summary) {
+  const latest = summary.latest || {};
+  const topCategory = summary.category_counts?.[0]?.category || "None";
+  els.metricProcessed.textContent = String(summary.processed || 0);
+  els.metricErrors.textContent = String(summary.errors || 0);
+  els.metricCategory.textContent = topCategory;
+  els.metricLastAction.textContent = latest.file_name || "None";
+  els.metricLastAction.title = latest.current_path || latest.original_path || "";
+}
+
 function renderActions() {
-  const processed = state.actions.filter((item) => item.status !== "error");
-  els.metricProcessed.textContent = String(processed.length);
-  els.metricCategory.textContent = processed[0]?.category || "None";
+  const filtered = filteredActions();
 
   const recent = state.actions.slice(0, 8);
   els.recentList.innerHTML = recent.length
     ? recent.map(renderActivityItem).join("")
     : `<div class="activity-item"><span class="meta-line">No files processed yet.</span></div>`;
 
-  els.historyRows.innerHTML = state.actions.length
-    ? state.actions.map(renderHistoryRow).join("")
-    : `<tr><td colspan="6">No history yet.</td></tr>`;
+  els.historyRows.innerHTML = filtered.length
+    ? filtered.map(renderHistoryRow).join("")
+    : `<tr><td colspan="6">No matching history.</td></tr>`;
 
   bindHistoryActions();
+}
+
+function filteredActions() {
+  const needle = state.historySearch.trim().toLowerCase();
+  return state.actions.filter((item) => {
+    const statusMatches = !state.historyStatus || item.status === state.historyStatus;
+    if (!statusMatches) {
+      return false;
+    }
+    if (!needle) {
+      return true;
+    }
+    return [item.file_name, item.current_path, item.original_path, item.category, item.status]
+      .some((value) => String(value || "").toLowerCase().includes(needle));
+  });
 }
 
 function renderActivityItem(item) {
@@ -189,7 +223,7 @@ async function loadLogs() {
 }
 
 async function startMonitoring() {
-  try {
+  await withButtonBusy(els.startBtn, "Starting...", async () => {
     const status = await api("/api/start", {
       method: "POST",
       body: JSON.stringify({
@@ -200,19 +234,15 @@ async function startMonitoring() {
     });
     renderStatus(status);
     toast(status.queued_existing ? `Started. Queued ${status.queued_existing} files.` : "Monitoring started.");
-  } catch (error) {
-    toast(error.message);
-  }
+  });
 }
 
 async function stopMonitoring() {
-  try {
+  await withButtonBusy(els.stopBtn, "Stopping...", async () => {
     const status = await api("/api/stop", { method: "POST" });
     renderStatus(status);
     toast("Monitoring stopped.");
-  } catch (error) {
-    toast(error.message);
-  }
+  });
 }
 
 async function openPicker(targetId) {
@@ -278,8 +308,16 @@ function escapeAttr(value) {
 function bindEvents() {
   els.startBtn.addEventListener("click", startMonitoring);
   els.stopBtn.addEventListener("click", stopMonitoring);
-  els.refreshBtn.addEventListener("click", loadActions);
+  els.refreshBtn.addEventListener("click", refreshDashboard);
   els.refreshLogsBtn.addEventListener("click", loadLogs);
+  els.historySearch.addEventListener("input", () => {
+    state.historySearch = els.historySearch.value;
+    renderActions();
+  });
+  els.historyStatus.addEventListener("change", () => {
+    state.historyStatus = els.historyStatus.value;
+    renderActions();
+  });
   els.closePickerBtn.addEventListener("click", () => els.folderDialog.close());
   els.upBtn.addEventListener("click", () => state.pickerParent && browse(state.pickerParent));
   els.goBtn.addEventListener("click", () => browse(els.pickerPath.value));
@@ -295,13 +333,33 @@ function bindEvents() {
   });
 }
 
+async function withButtonBusy(button, busyText, task) {
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = busyText;
+  try {
+    await task();
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
+async function refreshDashboard() {
+  await withButtonBusy(els.refreshBtn, "Refreshing...", async () => {
+    await Promise.all([loadStatus(), loadSummary(), loadActions()]);
+  });
+}
+
 async function boot() {
   bindEvents();
   bindNavigation();
-  await Promise.all([loadStatus(), loadCategories(), loadActions()]);
+  await Promise.all([loadStatus(), loadCategories(), loadSummary(), loadActions()]);
   window.setInterval(async () => {
     try {
-      await Promise.all([loadStatus(), loadActions()]);
+      await Promise.all([loadStatus(), loadSummary(), loadActions()]);
     } catch (error) {
       console.warn(error);
     }
@@ -309,4 +367,3 @@ async function boot() {
 }
 
 boot().catch((error) => toast(error.message));
-

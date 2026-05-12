@@ -59,8 +59,12 @@ def create_app() -> Flask:
 
     @app.get("/api/actions")
     def actions():
-        limit = int(request.args.get("limit", "100"))
+        limit = _bounded_int(request.args.get("limit"), default=100, minimum=1, maximum=500)
         return jsonify(service.db.list_actions(limit))
+
+    @app.get("/api/summary")
+    def summary():
+        return jsonify(service.db.summary())
 
     @app.post("/api/actions/<int:action_id>/undo")
     def undo(action_id: int):
@@ -101,7 +105,7 @@ def create_app() -> Flask:
 
     @app.get("/api/logs")
     def logs():
-        lines = int(request.args.get("lines", "120"))
+        lines = _bounded_int(request.args.get("lines"), default=120, minimum=1, maximum=1000)
         return jsonify({"lines": _tail(DEFAULT_LOG_PATH, lines)})
 
     return app
@@ -162,3 +166,10 @@ def _tail(path: Path, lines: int) -> List[str]:
     with path.open("r", encoding="utf-8", errors="replace") as handle:
         return handle.readlines()[-lines:]
 
+
+def _bounded_int(raw_value: object, default: int, minimum: int, maximum: int) -> int:
+    try:
+        value = int(str(raw_value)) if raw_value not in {None, ""} else default
+    except (TypeError, ValueError):
+        value = default
+    return max(minimum, min(value, maximum))
