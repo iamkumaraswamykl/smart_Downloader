@@ -48,6 +48,17 @@ class OrganizerDatabase:
                 ON actions(created_at DESC)
                 """
             )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS learned_patterns (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    text_content TEXT,
+                    embedding BLOB,
+                    category TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
 
     def record_action(self, payload: Dict[str, Any]) -> int:
         fields = [
@@ -130,6 +141,17 @@ class OrganizerDatabase:
             row = conn.execute("SELECT * FROM actions WHERE id = ?", (action_id,)).fetchone()
         return dict(row) if row else None
 
+    def get_undoable_actions(self) -> List[Dict[str, Any]]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM actions WHERE status IN ('moved', 'reclassified') ORDER BY created_at DESC"
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def clear_history(self) -> None:
+        with self._lock, self._connect() as conn:
+            conn.execute("DELETE FROM actions")
+
     def mark_undone(self, action_id: int, current_path: str, status: str = "undone") -> None:
         with self._lock, self._connect() as conn:
             conn.execute(
@@ -185,3 +207,15 @@ class OrganizerDatabase:
                 "moved_at": None,
             }
         )
+
+    def record_learned_pattern(self, text: str, category: str, embedding: Optional[bytes] = None) -> None:
+        with self._lock, self._connect() as conn:
+            conn.execute(
+                "INSERT INTO learned_patterns (text_content, category, embedding) VALUES (?, ?, ?)",
+                (text[:2000], category, embedding),
+            )
+
+    def list_learned_patterns(self) -> List[Dict[str, Any]]:
+        with self._connect() as conn:
+            rows = conn.execute("SELECT * FROM learned_patterns ORDER BY created_at DESC").fetchall()
+        return [dict(row) for row in rows]

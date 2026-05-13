@@ -17,6 +17,10 @@ def create_app() -> Flask:
     app = Flask(__name__, template_folder="../templates", static_folder="../static")
 
     @app.get("/")
+    def landing():
+        return render_template("landing.html", app_name=APP_NAME)
+
+    @app.get("/dashboard")
     def index():
         return render_template("index.html", app_name=APP_NAME)
 
@@ -70,6 +74,21 @@ def create_app() -> Flask:
     def undo(action_id: int):
         try:
             return jsonify(service.undo(action_id))
+        except Exception as exc:
+            return jsonify({"error": str(exc)}), 400
+
+    @app.post("/api/actions/undo_all")
+    def undo_all():
+        try:
+            return jsonify(service.undo_all())
+        except Exception as exc:
+            return jsonify({"error": str(exc)}), 400
+
+    @app.post("/api/actions/clear")
+    def clear_history():
+        try:
+            service.clear_history()
+            return jsonify({"status": "success"})
         except Exception as exc:
             return jsonify({"error": str(exc)}), 400
 

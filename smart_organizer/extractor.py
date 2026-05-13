@@ -60,8 +60,11 @@ def extract_text(path: Path, max_chars: int = 12000) -> ExtractedContent:
     if suffix in TEXT_EXTENSIONS or mime_type.startswith("text/"):
         return _extract_text_file(path, mime_type, max_chars)
 
+    if suffix == ".docx" or mime_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        return _extract_docx(path, mime_type, max_chars)
+
     if suffix in ARCHIVE_EXTENSIONS:
-        return ExtractedContent("", mime_type, "metadata", "Archive content extraction is not enabled.")
+        return _extract_archive_metadata(path, mime_type, max_chars)
 
     if suffix in MEDIA_EXTENSIONS or mime_type.startswith("audio/") or mime_type.startswith("video/"):
         return ExtractedContent("", mime_type, "metadata", "Media transcription is not enabled.")
@@ -132,4 +135,55 @@ def _extract_image(path: Path, mime_type: str, max_chars: int) -> ExtractedConte
         return ExtractedContent(text.strip()[:max_chars], mime_type, "pytesseract")
     except Exception as exc:
         return ExtractedContent("", mime_type, "pytesseract", str(exc))
+
+
+def _extract_docx(path: Path, mime_type: str, max_chars: int) -> ExtractedContent:
+    """Extracts text from Word .docx files without external dependencies."""
+    try:
+        import zipfile
+        import xml.etree.ElementTree as ET
+        if not zipfile.is_zipfile(path):
+            return ExtractedContent("", mime_type, "docx", "Not a valid zip/docx file.")
+            
+        with zipfile.ZipFile(path) as docx:
+            if 'word/document.xml' not in docx.namelist():
+                return ExtractedContent("", mime_type, "docx", "No document.xml found in archive.")
+                
+            xml_content = docx.read('word/document.xml')
+            tree = ET.fromstring(xml_content)
+            # Word XML namespace
+            ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
+            paragraphs = []
+            for node in tree.iter(f'{{{ns["w"]}}}t'):
+                if node.text:
+                    paragraphs.append(node.text)
+            text = "\n".join(paragraphs).strip()[:max_chars]
+            return ExtractedContent(text, mime_type, "docx:internal")
+    except Exception as exc:
+        return ExtractedContent("", mime_type, "docx", f"DOCX extraction failed: {exc}")
+
+
+def _extract_archive_metadata(path: Path, mime_type: str, max_chars: int) -> ExtractedContent:
+    """Peeks inside archives to list file names for context."""
+    results = ["Archive contains:"]
+    try:
+        import zipfile
+        if zipfile.is_zipfile(path):
+            with zipfile.ZipFile(path) as zf:
+                results.extend(zf.namelist()[:100])
+                return ExtractedContent("\n".join(results)[:max_chars], mime_type, "zip:peek")
+    except Exception:
+        pass
+        
+    try:
+        import tarfile
+        if tarfile.is_tarfile(path):
+            with tarfile.open(path) as tf:
+                results.extend(tf.getnames()[:100])
+                return ExtractedContent("\n".join(results)[:max_chars], mime_type, "tar:peek")
+    except Exception:
+        pass
+        
+    return ExtractedContent("", mime_type, "metadata", "Could not peek inside archive.")
+
 

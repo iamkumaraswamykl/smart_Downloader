@@ -10,6 +10,10 @@ LOG_DIR = BASE_DIR / "logs"
 
 DEFAULT_DB_PATH = Path(os.getenv("ORGANIZER_DB_PATH", DATA_DIR / "organizer.db"))
 DEFAULT_LOG_PATH = Path(os.getenv("ORGANIZER_LOG_PATH", LOG_DIR / "organizer.log"))
+# Gemini (Google) configuration
+GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+GEMINI_EMBEDDING_MODEL: str = os.getenv("GEMINI_EMBEDDING_MODEL", "models/embedding-001")
 
 DEFAULT_CATEGORIES = {
     "Academic": {

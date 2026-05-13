@@ -38,6 +38,8 @@ const els = {
   upBtn: document.querySelector("#upBtn"),
   goBtn: document.querySelector("#goBtn"),
   chooseBtn: document.querySelector("#chooseBtn"),
+  undoAllBtn: document.querySelector("#undoAllBtn"),
+  clearHistoryBtn: document.querySelector("#clearHistoryBtn"),
 };
 
 async function api(path, options = {}) {
@@ -330,6 +332,26 @@ function bindEvents() {
 
   document.querySelectorAll("[data-picker-target]").forEach((button) => {
     button.addEventListener("click", () => openPicker(button.dataset.pickerTarget));
+  });
+
+  els.undoAllBtn.addEventListener("click", async () => {
+    if (!confirm("Are you sure you want to undo ALL recent movements? This will move files back to their original locations.")) {
+      return;
+    }
+    await withButtonBusy(els.undoAllBtn, "Undoing all...", async () => {
+      const result = await api("/api/actions/undo_all", { method: "POST" });
+      toast(`Undone ${result.undone_count} actions.`);
+      await loadActions();
+    });
+  });
+
+  els.clearHistoryBtn.addEventListener("click", async () => {
+    if (!confirm("Are you sure you want to clear ALL history? This will delete all logs of file movements but won't move files back.")) {
+      return;
+    }
+    await api("/api/actions/clear", { method: "POST" });
+    toast("History cleared.");
+    await loadActions();
   });
 }
 

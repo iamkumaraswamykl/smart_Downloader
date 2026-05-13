@@ -30,8 +30,9 @@
     <main class="workspace">
       <section class="topbar">
         <div>
-          <p class="eyebrow">NLP-driven file intelligence</p>
-          <h1>Smart Downloads Auto-Organizer</h1>
+          <p class="eyebrow">AI-Powered File Intelligence</p>
+          <h1>Control Center</h1>
+          <p class="sub-heading">Monitor and manage your automated organization workflows.</p>
         </div>
         <div id="statusPill" class="status-pill idle">Idle</div>
       </section>
@@ -64,7 +65,7 @@
         </div>
       </section>
 
-      <section class="metric-grid">
+      <section class="metric-grid animate-fade">
         <div class="metric">
           <span>Status</span>
           <strong id="metricStatus">Idle</strong>
@@ -93,7 +94,7 @@
 
       <section id="dashboardView" class="view active-view">
         <div class="split-layout">
-          <div class="surface">
+          <div class="surface animate-up" style="animation-delay: 0.1s">
             <div class="section-head">
               <div>
                 <p class="eyebrow">Live activity</p>
@@ -104,7 +105,7 @@
             <div id="recentList" class="activity-list"></div>
           </div>
 
-          <div class="surface">
+          <div class="surface animate-up" style="animation-delay: 0.2s">
             <div class="section-head">
               <div>
                 <p class="eyebrow">Taxonomy</p>
@@ -117,11 +118,15 @@
       </section>
 
       <section id="historyView" class="view">
-        <div class="surface">
+        <div class="surface animate-up">
           <div class="section-head">
             <div>
               <p class="eyebrow">Audit trail</p>
               <h2>Processed files</h2>
+            </div>
+            <div class="table-actions">
+              <button id="undoAllBtn" class="danger">Undo All</button>
+              <button id="clearHistoryBtn" class="ghost">Clear History</button>
             </div>
           </div>
           <div class="history-toolbar">

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Downloads Organizer | AI-Powered File Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="glow-bg">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="glow-orb orb-3"></div>
+    </div>
+
+    <nav class="glass-nav">
+        <div class="nav-container">
+            <div class="brand">
+                <span class="logo-mark">AI</span>
+                <span>Smart Organizer</span>
+            </div>
+            <a href="/dashboard" class="btn-primary">Launch App</a>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <div class="badge fade-in">Powered by Gemini 2.5 Pro</div>
+                <h1 class="reveal-text">Organize your downloads <span class="gradient-text">with Intelligence.</span>
+                </h1>
+                <p class="fade-in-up">Stop manually moving files. Our AI-driven system monitors your downloads, extracts
+                    deep content, and categorizes everything automatically using advanced semantic embeddings.</p>
+                <div class="hero-actions fade-in-up-delay">
+                    <a href="/dashboard" class="btn-main">Get Started</a>
+                    <a href="#features" class="btn-outline">How it works</a>
+                </div>
+            </div>
+            <div class="hero-visual fade-in-right">
+                <div class="floating-card-stack">
+                    <div class="f-card c1">
+                        <div class="f-icon">📄</div>
+                        <div class="f-text">
+                            <strong>Invoice_2024.pdf</strong>
+                            <span>Detected: Finance</span>
+                        </div>
+                    </div>
+                    <div class="f-card c2">
+                        <div class="f-icon">📜</div>
+                        <div class="f-text">
+                            <strong>Research_Paper.docx</strong>
+                            <span>Detected: Academic</span>
+                        </div>
+                    </div>
+                    <div class="f-card c3">
+                        <div class="f-icon">🖼️</div>
+                        <div class="f-text">
+                            <strong>Screenshot_99.png</strong>
+                            <span>Detected: Images</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="features">
+            <div class="section-title">
+                <h2>Why Smart Organizer?</h2>
+            </div>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🧠</div>
+                    <h3>Semantic Intelligence</h3>
+                    <p>Uses Gemini embeddings to understand the "meaning" of your files, not just names.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Deep Extraction</h3>
+                    <p>Peeks inside PDFs, Images (OCR), Word docs, and even ZIP files for context.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h3>User-Correction Loop</h3>
+                    <p>The system learns from you. Manually move a file, and it remembers for next time.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Real-time Watcher</h3>
+                    <p>Background monitoring detects new downloads instantly and processes them in seconds.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 Smart Downloads Auto-Organizer. Built with AI.</p>
+    </footer>
+
+    <script>
+        // Simple scroll animation trigger
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.feature-card').forEach(card => {
+            observer.observe(card);
+        });
+    </script>
+</body>
+
+</html>

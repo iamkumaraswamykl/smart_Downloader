@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 import json
+import math
 import os
 import re
 
@@ -13,6 +14,9 @@ from .config import (
     IMAGE_EXTENSIONS,
     MEDIA_EXTENSIONS,
     PDF_EXTENSIONS,
+    GEMINI_API_KEY,
+    GEMINI_MODEL,
+    GEMINI_EMBEDDING_MODEL,
 )
 
 
@@ -29,20 +33,64 @@ class SemanticClassifier:
     def __init__(self, categories: Optional[Dict[str, Dict[str, object]]] = None):
         self.categories = categories or DEFAULT_CATEGORIES
         self.llm_provider = os.getenv("ORGANIZER_LLM_PROVIDER", "").strip().lower()
+        self._category_embeddings: Dict[str, List[float]] = {}
 
-    def classify(self, text: str, path: Path, mime_type: str = "") -> ClassificationResult:
+    def classify(
+        self, 
+        text: str, 
+        path: Path, 
+        mime_type: str = "", 
+        learned_patterns: Optional[List[Dict[str, Any]]] = None
+    ) -> ClassificationResult:
         text = (text or "").strip()
 
+        # 0. Try User Corrections (Learned Patterns) first - Priority 4
+        if learned_patterns:
+            learned_result = self._try_learned_patterns(text, path, learned_patterns)
+            if learned_result:
+                return learned_result
+
         if self.llm_provider:
+            # 1. Try LLM (Generative)
             llm_result = self._try_llm(text, path, mime_type)
             if llm_result:
                 return llm_result
+            
+            # 2. Fallback to Embeddings (Semantic Search) if LLM fails
+            embed_result = self._classify_with_embeddings(text, path)
+            if embed_result:
+                return embed_result
 
         return self._classify_locally(text, path, mime_type)
 
+    def _try_learned_patterns(self, text: str, path: Path, patterns: List[Dict[str, Any]]) -> Optional[ClassificationResult]:
+        """Matches current file against historical user corrections."""
+        normalized_doc = _normalize_text(f"{path.name} {text[:500]}")
+        
+        for pattern in patterns:
+            pattern_text = pattern.get("text_content", "")
+            if not pattern_text:
+                continue
+                
+            normalized_pattern = _normalize_text(pattern_text)
+            
+            # Simple exact match or very high similarity check
+            # In the future, this can use the 'embedding' column if available
+            if normalized_pattern in normalized_doc or normalized_doc in normalized_pattern:
+                return ClassificationResult(
+                    pattern["category"],
+                    0.95,
+                    "user-learning",
+                    f"Matched historical correction for: '{pattern_text[:50]}...'",
+                    []
+                )
+        return None
+
     def _classify_locally(self, text: str, path: Path, mime_type: str) -> ClassificationResult:
         suffix = path.suffix.lower()
-        normalized = _normalize_text(text)
+        # Include the filename in the text to be analyzed for strong keyword signals
+        combined_text = f"{path.name}\n{text}"
+        normalized = _normalize_text(combined_text)
         scores: Dict[str, float] = {}
         matches: Dict[str, List[str]] = {}
 
@@ -118,54 +166,157 @@ class SemanticClassifier:
         return score, matched_terms
 
     def _try_llm(self, text: str, path: Path, mime_type: str) -> Optional[ClassificationResult]:
-        if self.llm_provider != "openai":
+        if not self.llm_provider:
             return None
-        if not os.getenv("OPENAI_API_KEY"):
+
+        categories = {name: cfg.get("description", "") for name, cfg in self.categories.items()}
+        prompt_data = {
+            "file_name": path.name,
+            "mime_type": mime_type,
+            "categories": categories,
+            "content_excerpt": text[:6000],
+            "instruction": (
+                "Classify this downloaded file into exactly one category from the provided list. "
+                "Respond ONLY with a valid JSON object containing: 'category', 'confidence' (0-1), and 'rationale'."
+            ),
+        }
+        prompt_json = json.dumps(prompt_data)
+
+        # 1. Gemini Implementation (Priority)
+        if self.llm_provider == "gemini":
+            if not GEMINI_API_KEY:
+                return None
+            try:
+                import google.generativeai as genai  # type: ignore
+                genai.configure(api_key=GEMINI_API_KEY)
+                model = genai.GenerativeModel(GEMINI_MODEL)
+                
+                response = model.generate_content(
+                    prompt_json,
+                    generation_config=genai.types.GenerationConfig(
+                        temperature=0,
+                        max_output_tokens=1024,
+                        response_mime_type="application/json",
+                    ),
+                )
+                
+                data = _json_from_text(response.text or "{}")
+                category = str(data.get("category", "Uncategorized"))
+                if category not in self.categories:
+                    category = "Uncategorized"
+                    
+                return ClassificationResult(
+                    category,
+                    float(data.get("confidence", 0.5)),
+                    "gemini-llm",
+                    str(data.get("rationale", "Gemini classified the file.")),
+                    [],
+                )
+            except Exception:
+                return None
+
+        # 2. OpenAI Implementation (Secondary)
+        if self.llm_provider == "openai":
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                return None
+            try:
+                from openai import OpenAI  # type: ignore
+                client = OpenAI(api_key=api_key)
+                
+                response = client.chat.completions.create(
+                    model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+                    messages=[
+                        {"role": "system", "content": "You are a professional file organizer. Respond only in JSON."},
+                        {"role": "user", "content": prompt_json}
+                    ],
+                    temperature=0,
+                    response_format={"type": "json_object"}
+                )
+                
+                content = response.choices[0].message.content or "{}"
+                data = _json_from_text(content)
+                category = str(data.get("category", "Uncategorized"))
+                if category not in self.categories:
+                    category = "Uncategorized"
+                    
+                return ClassificationResult(
+                    category,
+                    float(data.get("confidence", 0.5)),
+                    "openai-llm",
+                    str(data.get("rationale", "OpenAI classified the file.")),
+                    [],
+                )
+            except Exception:
+                return None
+
+        return None
+
+    def _classify_with_embeddings(self, text: str, path: Path) -> Optional[ClassificationResult]:
+        """Classifies using Gemini embeddings and cosine similarity."""
+        if self.llm_provider != "gemini" or not GEMINI_API_KEY:
             return None
 
         try:
-            from openai import OpenAI  # type: ignore
+            import google.generativeai as genai # type: ignore
+            genai.configure(api_key=GEMINI_API_KEY)
 
-            client = OpenAI()
-            categories = {
-                name: cfg.get("description", "")
-                for name, cfg in self.categories.items()
-            }
-            prompt = {
-                "file_name": path.name,
-                "mime_type": mime_type,
-                "categories": categories,
-                "content_excerpt": text[:6000],
-                "instruction": (
-                    "Classify this downloaded file into exactly one category. "
-                    "Respond only as JSON with category, confidence between 0 and 1, and rationale."
-                ),
-            }
-            response = client.chat.completions.create(
-                model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You classify local downloaded files safely and conservatively.",
-                    },
-                    {"role": "user", "content": json.dumps(prompt)},
-                ],
-                temperature=0,
+            # 1. Ensure category embeddings are cached
+            if not self._category_embeddings:
+                for name, cfg in self.categories.items():
+                    desc = str(cfg.get("description", name))
+                    keywords = ", ".join([str(k) for k in cfg.get("keywords", [])])
+                    target_text = f"{name}: {desc}. Keywords: {keywords}"
+                    result = genai.embed_content(
+                        model=GEMINI_EMBEDDING_MODEL,
+                        content=target_text,
+                        task_type="classification"
+                    )
+                    self._category_embeddings[name] = result['embedding']
+
+            # 2. Get embedding for the document
+            doc_text = f"{path.name}\n{text[:2000]}"
+            doc_result = genai.embed_content(
+                model=GEMINI_EMBEDDING_MODEL,
+                content=doc_text,
+                task_type="classification"
             )
-            content = response.choices[0].message.content or ""
-            data = _json_from_text(content)
-            category = str(data.get("category", "Uncategorized"))
-            if category not in self.categories:
-                category = "Uncategorized"
+            doc_embedding = doc_result['embedding']
+
+            # 3. Compare and find best match
+            best_category = "Uncategorized"
+            best_similarity = -1.0
+
+            for name, cat_embedding in self._category_embeddings.items():
+                sim = _cosine_similarity(doc_embedding, cat_embedding)
+                if sim > best_similarity:
+                    best_similarity = sim
+                    best_category = name
+
+            confidence = max(0.0, min(1.0, (best_similarity - 0.4) / 0.5))
+            if confidence < 0.4:
+                return None
+
             return ClassificationResult(
-                category,
-                float(data.get("confidence", 0.5)),
-                "openai-llm",
-                str(data.get("rationale", "LLM classification.")),
-                [],
+                best_category,
+                round(confidence, 3),
+                "gemini-embeddings",
+                f"Highest semantic similarity ({best_similarity:.3f}) with {best_category}.",
+                []
             )
         except Exception:
             return None
+
+
+def _cosine_similarity(v1: List[float], v2: List[float]) -> float:
+    if not v1 or not v2 or len(v1) != len(v2):
+        return 0.0
+    dot_product = sum(a * b for a, b in zip(v1, v2))
+    magnitude1 = math.sqrt(sum(a * a for a in v1))
+    magnitude2 = math.sqrt(sum(a * a for a in v2))
+    if magnitude1 == 0 or magnitude2 == 0:
+        return 0.0
+    return dot_product / (magnitude1 * magnitude2)
 
 
 def _normalize_text(text: str) -> str:

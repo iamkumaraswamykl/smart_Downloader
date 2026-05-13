@@ -182,8 +182,31 @@ class OrganizerService:
         destination = self._destination_for(current.name, category)
         shutil.move(str(current), str(destination))
         self.db.mark_reclassified(action_id, category, str(destination), str(destination))
+        
+        # Priority 4: Category Learning
+        # Store the corrected pattern for future auto-classification
+        if action.get("extracted_preview"):
+            self.db.record_learned_pattern(action["extracted_preview"], category)
+            
         self.logger.info("Manual reclassify action %s: %s -> %s", action_id, current, destination)
         return {"id": action_id, "category": category, "current_path": str(destination)}
+
+    def undo_all(self) -> Dict[str, object]:
+        actions = self.db.get_undoable_actions()
+        count = 0
+        errors = []
+        for action in actions:
+            try:
+                self.undo(action["id"])
+                count += 1
+            except Exception as exc:
+                errors.append(f"Action {action['id']}: {exc}")
+        
+        return {"undone_count": count, "errors": errors}
+
+    def clear_history(self) -> None:
+        self.db.clear_history()
+        self.logger.info("History cleared by user.")
 
     def _worker_loop(self) -> None:
         while not self._stop_event.is_set():
@@ -207,7 +230,8 @@ class OrganizerService:
             raise TimeoutError(f"File did not become stable in time: {path}")
 
         extracted = extract_text(path)
-        result = self.classifier.classify(extracted.text, path, extracted.mime_type)
+        learned = self.db.list_learned_patterns()
+        result = self.classifier.classify(extracted.text, path, extracted.mime_type, learned_patterns=learned)
         if extracted.error and result.category == "Uncategorized":
             result = ClassificationResult(
                 "Uncategorized",
