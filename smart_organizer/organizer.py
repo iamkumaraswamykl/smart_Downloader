@@ -208,6 +208,19 @@ class OrganizerService:
         self.db.clear_history()
         self.logger.info("History cleared by user.")
 
+    def clear_logs(self) -> None:
+        # Find the log file path from handlers
+        log_path = None
+        for handler in self.logger.handlers:
+            if isinstance(handler, logging.FileHandler):
+                log_path = Path(handler.baseFilename)
+                break
+        
+        if log_path and log_path.exists():
+            with log_path.open("w", encoding="utf-8") as f:
+                f.write("") # Clear the file
+            self.logger.info("Logs cleared by user.")
+
     def _worker_loop(self) -> None:
         while not self._stop_event.is_set():
             try:

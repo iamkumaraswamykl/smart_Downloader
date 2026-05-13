@@ -13,6 +13,8 @@ const els = {
   processExisting: document.querySelector("#processExisting"),
   startBtn: document.querySelector("#startBtn"),
   stopBtn: document.querySelector("#stopBtn"),
+  stickyHeader: document.querySelector(".sticky-header"),
+  scrollingContent: document.querySelector(".scrolling-content"),
   refreshBtn: document.querySelector("#refreshBtn"),
   refreshLogsBtn: document.querySelector("#refreshLogsBtn"),
   statusPill: document.querySelector("#statusPill"),
@@ -40,6 +42,7 @@ const els = {
   chooseBtn: document.querySelector("#chooseBtn"),
   undoAllBtn: document.querySelector("#undoAllBtn"),
   clearHistoryBtn: document.querySelector("#clearHistoryBtn"),
+  clearLogsBtn: document.querySelector("#clearLogsBtn"),
 };
 
 async function api(path, options = {}) {
@@ -308,6 +311,14 @@ function escapeAttr(value) {
 }
 
 function bindEvents() {
+  els.scrollingContent.addEventListener("scroll", () => {
+    if (els.scrollingContent.scrollTop > 60) {
+      els.stickyHeader.classList.add("header-collapsed");
+    } else {
+      els.stickyHeader.classList.remove("header-collapsed");
+    }
+  });
+
   els.startBtn.addEventListener("click", startMonitoring);
   els.stopBtn.addEventListener("click", stopMonitoring);
   els.refreshBtn.addEventListener("click", refreshDashboard);
@@ -352,6 +363,15 @@ function bindEvents() {
     await api("/api/actions/clear", { method: "POST" });
     toast("History cleared.");
     await loadActions();
+  });
+
+  els.clearLogsBtn.addEventListener("click", async () => {
+    if (!confirm("Are you sure you want to clear ALL logs? This will delete the current log file content.")) {
+      return;
+    }
+    await api("/api/logs/clear", { method: "POST" });
+    toast("Logs cleared.");
+    await loadLogs();
   });
 }
 

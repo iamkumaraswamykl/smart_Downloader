@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ app_name }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
@@ -28,69 +31,73 @@
     </aside>
 
     <main class="workspace">
-      <section class="topbar">
-        <div>
-          <p class="eyebrow">AI-Powered File Intelligence</p>
-          <h1>Control Center</h1>
-          <p class="sub-heading">Monitor and manage your automated organization workflows.</p>
-        </div>
-        <div id="statusPill" class="status-pill idle">Idle</div>
-      </section>
+      <div class="sticky-header">
+        <section class="topbar">
+          <div>
+            <p class="eyebrow">AI-Powered File Intelligence</p>
+            <h1>Control Center</h1>
+            <p class="sub-heading">Monitor and manage your automated organization workflows.</p>
+          </div>
+          <div id="statusPill" class="status-pill idle">Idle</div>
+        </section>
 
-      <section class="control-band">
-        <div class="path-grid">
-          <label>
-            Watch folder
-            <div class="path-row">
-              <input id="watchPath" type="text" placeholder="Select a folder to monitor">
-              <button class="ghost" data-picker-target="watchPath" title="Browse folders">Browse</button>
-            </div>
-          </label>
-          <label>
-            Destination root
-            <div class="path-row">
-              <input id="destinationRoot" type="text" placeholder="Defaults to Organized inside watch folder">
-              <button class="ghost" data-picker-target="destinationRoot" title="Browse folders">Browse</button>
-            </div>
-          </label>
-        </div>
+        <section class="control-band">
+          <div class="path-grid">
+            <label>
+              Watch folder
+              <div class="path-row">
+                <input id="watchPath" type="text" placeholder="Select a folder to monitor">
+                <button class="ghost" data-picker-target="watchPath" title="Browse folders">Browse</button>
+              </div>
+            </label>
+            <label>
+              Destination root
+              <div class="path-row">
+                <input id="destinationRoot" type="text" placeholder="Defaults to Organized inside watch folder">
+                <button class="ghost" data-picker-target="destinationRoot" title="Browse folders">Browse</button>
+              </div>
+            </label>
+          </div>
 
-        <div class="actions-row">
-          <label class="toggle-row">
-            <input id="processExisting" type="checkbox">
-            <span>Process existing files on start</span>
-          </label>
-          <button id="startBtn" class="primary">Start Monitoring</button>
-          <button id="stopBtn" class="danger">Stop</button>
-        </div>
-      </section>
+          <div class="actions-row">
+            <label class="toggle-row">
+              <input id="processExisting" type="checkbox">
+              <span>Process existing files on start</span>
+            </label>
+            <button id="startBtn" class="primary">Start Monitoring</button>
+            <button id="stopBtn" class="danger">Stop</button>
+          </div>
+        </section>
 
-      <section class="metric-grid animate-fade">
-        <div class="metric">
-          <span>Status</span>
-          <strong id="metricStatus">Idle</strong>
-        </div>
-        <div class="metric">
-          <span>Queue</span>
-          <strong id="metricQueue">0</strong>
-        </div>
-        <div class="metric">
-          <span>Last Category</span>
-          <strong id="metricCategory">None</strong>
-        </div>
-        <div class="metric">
-          <span>Processed</span>
-          <strong id="metricProcessed">0</strong>
-        </div>
-        <div class="metric">
-          <span>Errors</span>
-          <strong id="metricErrors">0</strong>
-        </div>
-        <div class="metric">
-          <span>Last Activity</span>
-          <strong id="metricLastAction">None</strong>
-        </div>
-      </section>
+        <section class="metric-grid animate-fade">
+          <div class="metric">
+            <span>Status</span>
+            <strong id="metricStatus">Idle</strong>
+          </div>
+          <div class="metric">
+            <span>Queue</span>
+            <strong id="metricQueue">0</strong>
+          </div>
+          <div class="metric">
+            <span>Last Category</span>
+            <strong id="metricCategory">None</strong>
+          </div>
+          <div class="metric">
+            <span>Processed</span>
+            <strong id="metricProcessed">0</strong>
+          </div>
+          <div class="metric">
+            <span>Errors</span>
+            <strong id="metricErrors">0</strong>
+          </div>
+          <div class="metric">
+            <span>Last Activity</span>
+            <strong id="metricLastAction">None</strong>
+          </div>
+        </section>
+      </div>
+
+      <div class="scrolling-content">
 
       <section id="dashboardView" class="view active-view">
         <div class="split-layout">
@@ -170,11 +177,15 @@
               <p class="eyebrow">Runtime</p>
               <h2>Organizer logs</h2>
             </div>
-            <button id="refreshLogsBtn" class="ghost">Refresh</button>
+            <div class="table-actions">
+              <button id="clearLogsBtn" class="danger">Clear Logs</button>
+              <button id="refreshLogsBtn" class="ghost">Refresh</button>
+            </div>
           </div>
           <pre id="logOutput" class="log-output"></pre>
         </div>
       </section>
+      </div>
     </main>
   </div>
 

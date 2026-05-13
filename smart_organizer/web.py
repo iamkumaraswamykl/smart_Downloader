@@ -126,6 +126,14 @@ def create_app() -> Flask:
     def logs():
         lines = _bounded_int(request.args.get("lines"), default=120, minimum=1, maximum=1000)
         return jsonify({"lines": _tail(DEFAULT_LOG_PATH, lines)})
+    
+    @app.post("/api/logs/clear")
+    def clear_logs():
+        try:
+            service.clear_logs()
+            return jsonify({"status": "success"})
+        except Exception as exc:
+            return jsonify({"error": str(exc)}), 400
 
     return app
 
