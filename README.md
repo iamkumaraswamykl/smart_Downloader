@@ -1,113 +1,99 @@
-# Smart Downloads Auto-Organizer Using NLP-Driven File Classification
+# Smart Downloads Auto-Organizer 🚀
+### AI-Powered File Intelligence with Gemini 1.5 Flash
 
-Smart Downloads Auto-Organizer is a local Python system that watches a folder in real time, extracts file content, classifies downloads semantically, and moves them into clean category folders. It includes a Flask dashboard for folder selection, live status, audit history, undo, and manual reclassification.
+Smart Downloads Auto-Organizer is a cutting-edge local system that transforms your messy downloads folder into a perfectly categorized workspace using state-of-the-art LLMs and semantic embeddings.
 
-## What it does
+![Dashboard Preview](https://via.placeholder.com/1200x600?text=Smart+Organizer+Dashboard+Preview)
 
-- Monitors a selected folder in real time with `watchdog`.
-- Waits until newly downloaded files are stable before processing.
-- Extracts text from PDFs with `pdfplumber` first and `PyPDF2` as a fallback.
-- Extracts image text with OCR using `pytesseract` and `Pillow`.
-- Reads plain text and code-like files directly.
-- Classifies files by content using a built-in semantic classifier.
-- Optionally delegates classification to an OpenAI-compatible LLM when configured.
-- Moves files into predefined category folders.
-- Logs every action to SQLite and `logs/organizer.log`.
-- Handles corrupted, unsupported, and unreadable files by using `Uncategorized`.
-- Supports undo and manual reclassification from the dashboard.
+## ✨ Key Features
 
-## Project structure
+- **🧠 Gemini 1.5 Integration**: Uses Google's latest LLM for high-accuracy document classification.
+- **🛡️ Semantic Fallback**: When offline or without an API key, the system uses **vector embeddings** (`models/embedding-001`) and cosine similarity to understand document meaning.
+- **🔄 User-Correction Loop**: The system **learns from you**. If you manually reclassify a file, the system remembers that pattern for future downloads.
+- **🔍 Deep Content Extraction**:
+  - **OCR**: Powered by Tesseract for image-to-text.
+  - **PDF & Word**: Native extraction for `.pdf` and `.docx`.
+  - **Archives**: Peeks inside `.zip` and `.tar` files to identify contents.
+- **🎨 Stunning UI/UX**:
+  - **Modern Landing Page**: High-performance animations and glassmorphism.
+  - **Control Center**: Real-time monitoring, metric tracking, and live logs.
+  - **Safe Undo**: Single-click undo for any action or a complete "Undo All" rollback.
+- **⚡ Real-time Monitoring**: Background watcher with file stability protection (waits for downloads to finish).
+
+## 📂 Project Structure
 
 ```text
 smart_organizer/
-  classifier.py    Local semantic classifier and optional LLM hook
-  database.py      SQLite audit trail
-  extractor.py     PDF, OCR image, and text extraction
-  organizer.py     Watchdog service, stability checks, moves, undo
-  web.py           Flask dashboard and JSON API
+  classifier.py    Gemini LLM & Embedding-based logic
+  database.py      SQLite audit trail & Learned patterns storage
+  extractor.py     Multi-format text extraction (PDF, DOCX, OCR, Archives)
+  organizer.py     Watchdog service, stability checks, and movement logic
+  web.py           Flask backend & REST API
 templates/
-  index.html       Dashboard UI
+  landing.html     Animated entrance page
+  index.html       Control Center Dashboard
 static/
-  css/styles.css   Frontend styling
-  js/app.js        Dashboard behavior
-tests/
-  test_classifier.py
-  test_paths.py
+  css/landing.css  Modern landing page styles
+  css/styles.css   Dashboard theme (Midnight Violet)
+  js/app.js        Real-time frontend logic
 ```
 
-## Setup
+## 🛠️ Setup
 
+### 1. Environment Preparation
 Python 3.8 or newer is required.
 
 ```bash
-python -m venv .venv
-.venv\Scripts\activate
+# Create and activate virtual environment
+python -m venv myenv
+myenv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-For OCR, install Tesseract separately:
+### 2. External Dependencies
+- **Tesseract OCR**: Required for image extraction.
+  - [Download Tesseract for Windows](https://github.com/UB-Mannheim/tesseract/wiki)
+  - Set `TESSERACT_CMD` in your `.env` file to the path of `tesseract.exe`.
 
-- Windows: install Tesseract OCR and set `TESSERACT_CMD` in `.env` or your shell.
-- macOS: `brew install tesseract`
-- Linux: install the `tesseract-ocr` package from your distribution.
+### 3. Configuration (`.env`)
+Create a `.env` file in the root directory (see `.env.example`):
 
-`python-magic` may need platform support. On Windows, if `python-magic` cannot locate libmagic, install `python-magic-bin` instead.
-
-## Optional LLM classification
-
-The system works without an API key. To use an OpenAI LLM, set:
-
-```bash
-set ORGANIZER_LLM_PROVIDER=openai
-set OPENAI_API_KEY=your_key_here
-set OPENAI_MODEL=gpt-4o-mini
+```ini
+GEMINI_API_KEY=your_google_ai_key
+ORGANIZER_LLM_PROVIDER=gemini
+TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe
 ```
 
-When the LLM is unavailable or errors, the local classifier is used automatically.
+## 🚀 Usage
 
-## Run
+1. **Start the server**:
+   ```bash
+   python run.py
+   ```
+2. **Access the Web UI**:
+   - Landing Page: `http://127.0.0.1:5000`
+   - Dashboard: `http://127.0.0.1:5000/dashboard`
+3. **Configure**: Select your **Watch Folder** (e.g., your Downloads folder) and click **Start Monitoring**.
 
-```bash
-python run.py
-```
+## 🧠 How the AI Works
 
-Open:
+1. **Extraction**: The system reads the filename and peeks inside the file (Text, Metadata, or OCR).
+2. **Generative Path**: If configured, Gemini 1.5 Flash analyzes the content and assigns a category + rationale.
+3. **Semantic Path**: If the LLM is busy, the system generates a **Vector Embedding** and compares it to predefined category embeddings using **Cosine Similarity**.
+4. **Learning Path**: Before any AI call, the system checks the **Learned Patterns** table to see if you've previously corrected a similar file.
 
-```text
-http://127.0.0.1:5000
-```
+## 🛡️ Safety & Reliability
 
-Use the dashboard to select the watch folder and destination root, then start monitoring. If the destination root is blank, the app creates an `Organized` folder inside the watched folder.
+- **Stability Check**: Waits for file size to stop changing before processing.
+- **Atomic Moves**: Uses standard library `shutil.move` for cross-platform reliability.
+- **Collision Protection**: Automatically renames files with numeric suffixes (e.g., `invoice (1).pdf`) to prevent overwriting.
+- **SQLite Audit**: Every single movement is logged and can be reverted.
 
-## Categories
+## 🤝 Contributing
 
-Default categories are:
+This project was built to showcase the power of local AI in everyday utility tools. Feel free to open issues or submit PRs!
 
-- Academic
-- Finance
-- Legal
-- Work
-- Personal
-- Documents
-- Code
-- Images
-- Media
-- Archives
-- Uncategorized
-
-You can adjust category descriptions, folder names, and semantic keywords in `smart_organizer/config.py`.
-
-## Safety behavior
-
-- Temporary browser download files such as `.crdownload`, `.part`, and `.tmp` are ignored.
-- The organizer waits for file size stability and successful read access before moving a file.
-- Files are never overwritten. Existing destination names receive a numeric suffix.
-- Every movement is stored in SQLite so it can be undone from the dashboard.
-- Unsupported or unreadable files are logged and routed to `Uncategorized` when possible.
-
-## Tests
-
-```bash
-pytest
-```
-
+---
+*Built with ❤️ by Antigravity*
