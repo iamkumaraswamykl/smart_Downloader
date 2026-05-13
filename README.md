@@ -94,4 +94,3 @@ TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe
 ## 🤝 Contributing
 
 This project was built to showcase the power of local AI in everyday utility tools. Feel free to open issues or submit PRs!
-
