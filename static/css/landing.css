@@ -1,11 +1,12 @@
 :root {
-    --bg: #050505;
+    --bg: #030407;
     --text: #ffffff;
-    --accent: #66d9d5;
-    --accent-dark: #39c98a;
-    --glass: rgba(255, 255, 255, 0.05);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --surface: #111111;
+    --accent: #8b5cf6;
+    --accent-dark: #6366f1;
+    --cyan: #06b6d4;
+    --glass: rgba(13, 15, 23, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --surface: #0a0b10;
 }
 
 * {
@@ -46,9 +47,9 @@ h1, h2, h3 {
     animation: move 20s infinite alternate;
 }
 
-.orb-1 { width: 400px; height: 400px; background: #66d9d5; top: -100px; left: -100px; }
-.orb-2 { width: 500px; height: 500px; background: #39c98a; bottom: -150px; right: -100px; animation-delay: -5s; }
-.orb-3 { width: 300px; height: 300px; background: #e4ad3f; top: 40%; left: 50%; animation-delay: -10s; }
+.orb-1 { width: 500px; height: 500px; background: var(--accent); top: -200px; left: -100px; opacity: 0.15; }
+.orb-2 { width: 600px; height: 600px; background: var(--cyan); bottom: -200px; right: -100px; animation-delay: -5s; opacity: 0.1; }
+.orb-3 { width: 400px; height: 400px; background: #f59e0b; top: 40%; left: 50%; animation-delay: -10s; opacity: 0.05; }
 
 @keyframes move {
     from { transform: translate(0, 0) scale(1); }
@@ -143,7 +144,7 @@ h1 {
 }
 
 .gradient-text {
-    background: linear-gradient(90deg, var(--accent), var(--accent-dark));
+    background: linear-gradient(135deg, #fff, var(--accent));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -275,6 +276,14 @@ p {
 .feature-icon {
     font-size: 2.5rem;
     margin-bottom: 24px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+}
+
+.feature-icon i {
+    width: 48px;
+    height: 48px;
 }
 
 .feature-card h3 {

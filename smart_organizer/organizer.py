@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from queue import Queue, Empty
 from typing import Dict, Optional
+import hashlib
 import logging
 import shutil
 import threading
@@ -254,6 +255,36 @@ class OrganizerService:
                 result.matched_terms,
             )
 
+        file_hash = _calculate_hash(path)
+        duplicate = self.db.find_duplicate(file_hash)
+
+        if duplicate:
+            # Handle duplicate
+            dest_folder = self.destination_root / "Duplicates"
+            dest_folder.mkdir(parents=True, exist_ok=True)
+            destination = _unique_path(dest_folder / path.name)
+            shutil.move(str(path), str(destination))
+            
+            payload = {
+                "original_path": str(path),
+                "current_path": str(destination),
+                "destination_path": str(destination),
+                "file_name": path.name,
+                "category": "Duplicate",
+                "confidence": 1.0,
+                "method": "hash_match",
+                "mime_type": extracted.mime_type,
+                "extractor": extracted.extractor,
+                "status": "duplicate",
+                "error": f"Duplicate of: {duplicate['file_name']} (Action ID: {duplicate['id']})",
+                "extracted_preview": _preview(extracted, result),
+                "file_hash": file_hash,
+                "moved_at": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+            }
+            action_id = self.db.record_action(payload)
+            self.logger.info("Detected duplicate: %s (Duplicate of Action ID %s)", path, duplicate["id"])
+            return action_id
+
         destination = self._destination_for(path.name, result.category)
         shutil.move(str(path), str(destination))
 
@@ -270,6 +301,7 @@ class OrganizerService:
             "status": "moved",
             "error": extracted.error,
             "extracted_preview": _preview(extracted, result),
+            "file_hash": file_hash,
             "moved_at": datetime.utcnow().isoformat(timespec="seconds") + "Z",
         }
         action_id = self.db.record_action(payload)
@@ -378,4 +410,12 @@ def _preview(extracted: ExtractedContent, result: ClassificationResult) -> str:
     if result.rationale:
         return result.rationale[:420]
     return extracted.error[:420]
+
+
+def _calculate_hash(path: Path, block_size: int = 65536) -> str:
+    sha256 = hashlib.sha256()
+    with path.open("rb") as f:
+        for block in iter(lambda: f.read(block_size), b""):
+            sha256.update(block)
+    return sha256.hexdigest()
 

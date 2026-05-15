@@ -107,6 +107,11 @@ DEFAULT_CATEGORIES = {
             "bundle", "export",
         ],
     },
+    "Duplicate": {
+        "folder": "Duplicates",
+        "description": "Redundant copies of files already processed.",
+        "keywords": [],
+    },
     "Uncategorized": {
         "folder": "Uncategorized",
         "description": "Fallback category for unsupported, unreadable or ambiguous files.",

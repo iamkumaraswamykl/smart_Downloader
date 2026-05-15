@@ -36,6 +36,7 @@ class OrganizerDatabase:
                     status TEXT NOT NULL,
                     error TEXT DEFAULT '',
                     extracted_preview TEXT DEFAULT '',
+                    file_hash TEXT,
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     moved_at TEXT,
                     undone_at TEXT
@@ -59,6 +60,11 @@ class OrganizerDatabase:
                 )
                 """
             )
+            # Migration: Add file_hash if it doesn't exist
+            try:
+                conn.execute("ALTER TABLE actions ADD COLUMN file_hash TEXT")
+            except sqlite3.OperationalError:
+                pass
 
     def record_action(self, payload: Dict[str, Any]) -> int:
         fields = [
@@ -74,6 +80,7 @@ class OrganizerDatabase:
             "status",
             "error",
             "extracted_preview",
+            "file_hash",
             "moved_at",
         ]
         values = [payload.get(field) for field in fields]
@@ -147,6 +154,14 @@ class OrganizerDatabase:
                 "SELECT * FROM actions WHERE status IN ('moved', 'reclassified') ORDER BY created_at DESC"
             ).fetchall()
         return [dict(row) for row in rows]
+
+    def find_duplicate(self, file_hash: str) -> Optional[Dict[str, Any]]:
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT * FROM actions WHERE file_hash = ? AND status IN ('moved', 'reclassified') LIMIT 1",
+                (file_hash,),
+            ).fetchone()
+        return dict(row) if row else None
 
     def clear_history(self) -> None:
         with self._lock, self._connect() as conn:

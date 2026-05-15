@@ -7,8 +7,9 @@
     <title>Smart Downloads Organizer | AI-Powered File Management</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
     <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap"
         rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
 <body>
@@ -22,7 +23,10 @@
         <div class="nav-container">
             <div class="brand">
                 <span class="logo-mark">AI</span>
-                <span>Smart Organizer</span>
+                <div class="brand-text">
+                  <strong>Smart Organizer</strong>
+                  <span>Automated Intelligence</span>
+                </div>
             </div>
             <a href="/dashboard" class="btn-primary">Launch App</a>
         </div>
@@ -74,22 +78,22 @@
             </div>
             <div class="feature-grid">
                 <div class="feature-card">
-                    <div class="feature-icon">🧠</div>
+                    <div class="feature-icon"><i data-lucide="brain-circuit"></i></div>
                     <h3>Semantic Intelligence</h3>
                     <p>Uses Gemini embeddings to understand the "meaning" of your files, not just names.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">🔍</div>
+                    <div class="feature-icon"><i data-lucide="search"></i></div>
                     <h3>Deep Extraction</h3>
                     <p>Peeks inside PDFs, Images (OCR), Word docs, and even ZIP files for context.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">🔄</div>
+                    <div class="feature-icon"><i data-lucide="refresh-cw"></i></div>
                     <h3>User-Correction Loop</h3>
                     <p>The system learns from you. Manually move a file, and it remembers for next time.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">⚡</div>
+                    <div class="feature-icon"><i data-lucide="zap"></i></div>
                     <h3>Real-time Watcher</h3>
                     <p>Background monitoring detects new downloads instantly and processes them in seconds.</p>
                 </div>
@@ -102,6 +106,7 @@
     </footer>
 
     <script>
+        lucide.createIcons();
         // Simple scroll animation trigger
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {

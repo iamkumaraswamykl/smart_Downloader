@@ -6,8 +6,9 @@
   <title>{{ app_name }}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -20,9 +21,18 @@
         </div>
       </div>
       <nav class="nav-stack" aria-label="Dashboard sections">
-        <button class="nav-item active" data-view="dashboard">Dashboard</button>
-        <button class="nav-item" data-view="history">History</button>
-        <button class="nav-item" data-view="logs">Logs</button>
+        <button class="nav-item active" data-view="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          Dashboard
+        </button>
+        <button class="nav-item" data-view="history">
+          <i data-lucide="lucide-history"></i>
+          History
+        </button>
+        <button class="nav-item" data-view="logs">
+          <i data-lucide="terminal"></i>
+          Logs
+        </button>
       </nav>
       <div class="system-readout">
         <span>Classifier</span>
@@ -147,6 +157,7 @@
                 <option value="">All statuses</option>
                 <option value="moved">Moved</option>
                 <option value="reclassified">Reclassified</option>
+                <option value="duplicate">Duplicates</option>
                 <option value="undone">Undone</option>
                 <option value="error">Errors</option>
               </select>

@@ -132,6 +132,7 @@ function renderActions() {
     ? filtered.map(renderHistoryRow).join("")
     : `<tr><td colspan="6">No matching history.</td></tr>`;
 
+  lucide.createIcons();
   bindHistoryActions();
 }
 
@@ -151,14 +152,24 @@ function filteredActions() {
 }
 
 function renderActivityItem(item) {
+  const icon = getCategoryIcon(item.category);
+  const statusColor = item.status === "error" ? "var(--red)" : item.status === "duplicate" ? "var(--amber)" : "var(--green)";
+  
   return `
     <article class="activity-item">
       <div class="activity-top">
-        <div class="file-name">${escapeHtml(item.file_name)}</div>
-        <span class="category-badge">${escapeHtml(item.category)}</span>
+        <div class="activity-icon" style="color: ${statusColor}">
+          <i data-lucide="${icon}"></i>
+        </div>
+        <div class="activity-content">
+          <div class="activity-header">
+            <strong class="file-name">${escapeHtml(item.file_name)}</strong>
+            <span class="category-badge">${escapeHtml(item.category)}</span>
+          </div>
+          <div class="meta-line">${escapeHtml(item.status)} • ${escapeHtml(item.method || "")} • ${formatConfidence(item.confidence)}</div>
+          <p class="preview">${escapeHtml(item.extracted_preview || item.error || item.current_path || "")}</p>
+        </div>
       </div>
-      <div class="meta-line">${escapeHtml(item.status)} | ${escapeHtml(item.method || "")} | ${formatConfidence(item.confidence)}</div>
-      <p class="preview">${escapeHtml(item.extracted_preview || item.error || item.current_path || "")}</p>
     </article>
   `;
 }
@@ -171,25 +182,63 @@ function renderHistoryRow(item) {
     })
     .join("");
 
-  const canUndo = item.status === "moved" || item.status === "reclassified";
+  const canUndo = item.status === "moved" || item.status === "reclassified" || item.status === "duplicate";
+  const icon = getCategoryIcon(item.category);
+  
   return `
     <tr>
       <td>
-        <strong class="file-name">${escapeHtml(item.file_name)}</strong>
-        <div class="meta-line">${escapeHtml(item.current_path || item.original_path || "")}</div>
+        <div class="history-file-cell">
+          <i data-lucide="${icon}" class="row-icon"></i>
+          <div>
+            <strong class="file-name">${escapeHtml(item.file_name)}</strong>
+            <div class="meta-line" title="${escapeAttr(item.current_path || item.original_path || "")}">
+              ${escapeHtml(item.current_path || item.original_path || "")}
+            </div>
+          </div>
+        </div>
       </td>
       <td><select class="inline-select" data-reclassify="${item.id}">${options}</select></td>
-      <td>${formatConfidence(item.confidence)}</td>
-      <td>${escapeHtml(item.status)}</td>
-      <td>${escapeHtml(item.created_at || "")}</td>
+      <td>
+        <div class="confidence-bar">
+          <div class="confidence-fill" style="width: ${Number(item.confidence || 0) * 100}%"></div>
+          <span>${formatConfidence(item.confidence)}</span>
+        </div>
+      </td>
+      <td>
+        <span class="status-tag status-${item.status}">${escapeHtml(item.status)}</span>
+      </td>
+      <td><span class="time-cell">${escapeHtml(item.created_at || "")}</span></td>
       <td>
         <div class="table-actions">
-          <button class="ghost" data-apply="${item.id}">Apply</button>
-          <button class="danger" data-undo="${item.id}" ${canUndo ? "" : "disabled"}>Undo</button>
+          <button class="ghost action-btn" data-apply="${item.id}" title="Apply reclassification">
+            <i data-lucide="check"></i>
+          </button>
+          <button class="danger action-btn" data-undo="${item.id}" ${canUndo ? "" : "disabled"} title="Undo movement">
+            <i data-lucide="rotate-ccw"></i>
+          </button>
         </div>
       </td>
     </tr>
   `;
+}
+
+function getCategoryIcon(category) {
+  const map = {
+    "Academic": "graduation-cap",
+    "Finance": "banknote",
+    "Legal": "file-text",
+    "Work": "briefcase",
+    "Personal": "user",
+    "Documents": "file",
+    "Code": "code-2",
+    "Images": "image",
+    "Media": "play-circle",
+    "Archives": "archive",
+    "Duplicate": "copy",
+    "Uncategorized": "help-circle"
+  };
+  return map[category] || "file";
 }
 
 function bindHistoryActions() {
@@ -399,6 +448,7 @@ async function boot() {
   bindEvents();
   bindNavigation();
   await Promise.all([loadStatus(), loadCategories(), loadSummary(), loadActions()]);
+  lucide.createIcons();
   window.setInterval(async () => {
     try {
       await Promise.all([loadStatus(), loadSummary(), loadActions()]);
